@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f5f7">
+<title>Дневной бюджет</title>
+<style>
+  :root{
+    --bg:#f5f5f7;
+    --card:#ffffff;
+    --input:#ffffff;
+    --text:#131316;
+    --muted:#86868b;
+    --line:#e6e6ea;
+    --ok:#0f8a5f;
+    --bad:#d3392f;
+    --radius:16px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --bg:#0d0d0f;
+      --card:#161619;
+      --input:#0f0f12;
+      --text:#f2f2f5;
+      --muted:#8b8b93;
+      --line:#26262c;
+      --ok:#35d399;
+      --bad:#ff6f64;
+    }
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  main{max-width:640px;margin:0 auto;padding:34px 20px 90px}
+
+  header{margin-bottom:18px}
+  h1{font-size:23px;font-weight:650;letter-spacing:-.02em;margin:0}
+  .sub{color:var(--muted);font-size:13px;margin:5px 0 0}
+
+  h2{
+    font-size:11px;font-weight:650;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--muted);margin:0 0 14px;
+  }
+
+  /* --- вкладки --- */
+  .tabs{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:4px;margin-bottom:16px;
+  }
+  .tabs button{
+    height:38px;font:inherit;font-size:14px;font-weight:550;
+    background:none;border:none;border-radius:10px;color:var(--muted);
+    cursor:pointer;transition:background .15s,color .15s;
+  }
+  .tabs button.active{background:var(--text);color:var(--card)}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:14px;
+  }
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  label{display:block;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+  input,select{
+    width:100%;min-width:0;height:42px;
+    margin-top:6px;padding:0 12px;
+    font:inherit;color:inherit;
+    background:var(--input);
+    border:1px solid var(--line);
+    border-radius:11px;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input::placeholder{color:var(--muted);opacity:.7}
+  input:focus,select:focus{
+    border-color:var(--muted);
+    box-shadow:0 0 0 3px rgba(128,128,140,.12);
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
+
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:12px 10px;
+    margin-top:18px;padding-top:16px;border-top:1px solid var(--line);
+  }
+  .stat{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .stat .k{
+    font-size:10px;line-height:1.25;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--muted);font-weight:600;
+  }
+  .stat .v{
+    font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;
+    letter-spacing:-.01em;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;
+  }
+  .stat .v.ok{color:var(--ok)}
+  .stat .v.bad{color:var(--bad)}
+
+  .btn{
+    display:block;width:100%;height:44px;margin-top:14px;
+    font:inherit;font-weight:550;
+    color:var(--card);background:var(--text);
+    border:none;border-radius:12px;cursor:pointer;
+    transition:opacity .15s;
+  }
+  .btn:hover{opacity:.86}
+  .btn:active{opacity:.72}
+  .btn:disabled,
+  .btn:disabled:hover{opacity:.35;cursor:default}
+
+  .link-btn{
+    margin-top:12px;padding:0;
+    font:inherit;font-size:12.5px;font-weight:550;
+    color:var(--muted);background:none;border:none;cursor:pointer;
+    text-decoration:underline;text-underline-offset:2px;
+  }
+  .link-btn:hover{color:var(--text)}
+
+  /* --- карточка дня --- */
+  .day{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:12px;
+    animation:appear .25s ease;
+  }
+  @keyframes appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .day.flash{animation:flash .9s ease}
+  @keyframes flash{
+    0%{box-shadow:0 0 0 3px rgba(128,128,140,.35)}
+    100%{box-shadow:0 0 0 0 rgba(128,128,140,0)}
+  }
+
+  .day-head{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    gap:12px;margin-bottom:10px;
+  }
+  .day-head-left{min-width:0}
+  .day-date{font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .day-budget{font-size:12px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+  .day-del{
+    flex:none;width:28px;height:28px;padding:0;margin:-4px -4px 0 0;
+    display:grid;place-items:center;
+    font-size:17px;line-height:1;
+    color:var(--muted);background:transparent;
+    border:none;border-radius:50%;
+    cursor:pointer;opacity:.5;
+    transition:opacity .15s,color .15s,background .15s;
+  }
+  .day-del:hover{opacity:1;color:var(--bad);background:rgba(211,57,47,.09)}
+
+  .expenses{list-style:none;margin:0 0 12px;padding:0}
+  .expenses:empty{display:none}
+  .expense{
+    display:flex;align-items:center;gap:10px;
+    padding:7px 0;font-size:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .expense:last-child{border-bottom:none}
+  .expense .cat{
+    flex:1;min-width:0;color:var(--muted);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .expense .amt{font-weight:550;font-variant-numeric:tabular-nums}
+  .del{
+    border:none;background:none;cursor:pointer;
+    color:var(--muted);font-size:17px;line-height:1;
+    padding:2px 5px;border-radius:7px;opacity:.45;
+    transition:opacity .15s,color .15s;
+  }
+  .del:hover{opacity:1;color:var(--bad)}
+
+  /* плюсик выровнен по строке ввода */
+  .day-form{display:flex;align-items:center;gap:8px}
+  .day-form select,
+  .day-form input{margin-top:0;height:42px}
+  .day-form select{flex:1;min-width:0}
+  .day-form input{width:96px;flex:none}
+  .day-form .add{
+    flex:none;width:42px;height:42px;padding:0;
+    display:grid;place-items:center;
+    font-size:19px;line-height:1;font-weight:400;
+    color:var(--card);background:var(--text);
+    border:none;border-radius:11px;cursor:pointer;
+    transition:opacity .15s;
+  }
+  .day-form .add:hover{opacity:.86}
+  .day-form .add:active{opacity:.72}
+
+  .day-foot{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:8px 12px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);
+  }
+  .day-total{
+    font-size:14px;font-weight:650;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  }
+  .day-total.ok{color:var(--ok)}
+  .day-total.over{color:var(--bad)}
+  .day-total.neutral{color:var(--muted);font-weight:500}
+
+  .save-btn{
+    flex:none;height:34px;padding:0 13px;
+    font:inherit;font-size:12.5px;font-weight:600;
+    color:var(--text);background:var(--input);
+    border:1px solid var(--line);border-radius:9px;
+    cursor:pointer;white-space:nowrap;
+    transition:opacity .15s;
+  }
+  .save-btn:not(:disabled):hover{opacity:.75}
+  .save-btn:disabled{opacity:.45;cursor:default}
+
+  /* --- статистика --- */
+  .stats-summary{
+    font-size:13px;color:var(--muted);
+    font-variant-numeric:tabular-nums;
+    margin:0 0 14px;
+  }
+  .stats-summary b{color:var(--text);font-weight:650}
+  .stat-row{padding:10px 0;border-bottom:1px solid var(--line)}
+  .stat-row:first-child{padding-top:0}
+  .stat-row:last-child{border-bottom:none;padding-bottom:0}
+  .stat-top{display:flex;align-items:baseline;gap:10px;font-size:14px}
+  .stat-dot{
+    flex:none;
+    align-self:center;
+    width:9px;height:9px;border-radius:50%;
+    box-shadow:0 0 0 1px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    .stat-dot{box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+  }
+  .stat-cat{
+    flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .stat-sum{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .stat-pct{
+    flex:none;width:56px;text-align:right;
+    font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;
+  }
+  .stat-bar{height:4px;margin-top:7px;border-radius:2px;background:var(--line);overflow:hidden}
+  .stat-bar i{display:block;height:100%;border-radius:2px}
+
+  .empty{
+    text-align:center;color:var(--muted);font-size:13px;
+    padding:26px 0 8px;
+  }
+
+  @media (max-width:520px){
+    main{padding:26px 14px 80px}
+    .row{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr);gap:14px 10px}
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Дневной бюджет</h1>
+    <p class="sub">Сколько можно тратить в день до зарплаты</p>
+  </header>
+
+  <nav class="tabs" aria-label="Разделы">
+    <button type="button" data-tab="main" class="active">Основная</button>
+    <button type="button" data-tab="history">История</button>
+    <button type="button" data-tab="stats">Статистика</button>
+  </nav>
+
+  <!-- ================= ОСНОВНАЯ ================= -->
+  <div class="tabpane" id="tab-main">
+    <section class="card">
+      <div class="row">
+        <label>Сумма на руках
+          <input id="amount" type="number" step="any" min="0" inputmode="decimal" placeholder="0">
+        </label>
+        <label>Дата зарплаты
+          <input id="salaryDate" type="date">
+        </label>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="k">Дней</span><span class="v" id="stDays">—</span></div>
+        <div class="stat"><span class="k">В день</span><span class="v" id="stPerDay">—</span></div>
+        <div class="stat"><span class="k">Потрачено сегодня</span><span class="v" id="stToday">—</span></div>
+        <div class="stat"><span class="k">Накоплено</span><span class="v" id="stSaved">—</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Новый расход</h2>
+      <form id="expenseForm" autocomplete="off">
+        <label>Дата<input id="eDate" type="date"></label>
+        <button class="btn" id="addDayBtn" type="submit">Добавить расход</button>
+      </form>
+    </section>
+
+    <div id="daysMain"></div>
+  </div>
+
+  <!-- ================= ИСТОРИЯ ================= -->
+  <div class="tabpane" id="tab-history" hidden>
+    <div id="daysHistory"></div>
+  </div>
+
+  <!-- ================= СТАТИСТИКА ================= -->
+  <div class="tabpane" id="tab-stats" hidden>
+    <section class="card">
+      <h2>Период</h2>
+      <div class="row">
+        <label>С даты<input id="statsFrom" type="date"></label>
+        <label>По дату<input id="statsTo" type="date"></label>
+      </div>
+      <button type="button" class="link-btn" id="statsReset">Сбросить фильтр</button>
+    </section>
+
+    <section class="card">
+      <h2>По категориям</h2>
+      <div id="statsResult"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  const CATS = [
+    'Еда на улице',
+    'Обеды на работе',
+    'Одежда',
+    'Детское',
+    'Подарки',
+    'Средства для ухода',
+    'Услуги по уходу',
+    'Развлечения',
+    'В дом',
+    'Бытовые нужды',
+    'Займы',
+    'Сервисы/Подписки'
+  ];
+
+  // Цвета категорий (подобраны так, чтобы читаться и в светлой, и в тёмной теме)
+  const CAT_COLORS = {
+    'Еда на улице':       '#f97316',
+    'Обеды на работе':    '#ca8a04',
+    'Одежда':             '#a855f7',
+    'Детское':            '#ec4899',
+    'Подарки':            '#ef4444',
+    'Средства для ухода': '#06b6d4',
+    'Услуги по уходу':    '#14b8a6',
+    'Развлечения':        '#6366f1',
+    'В дом':              '#16a34a',
+    'Бытовые нужды':      '#65a30d',
+    'Займы':              '#78716c',
+    'Сервисы/Подписки':   '#3b82f6'
+  };
+
+  const STORE = 'daily-budget-v1';
+
+  const $ = s => document.querySelector(s);
+  const nf = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+  const pctFmt = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
+  const money = n => nf.format(Math.round(n * 100) / 100) + ' ₽';
+
+  /* ---------- даты ---------- */
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const todayISO = () => iso(new Date());
+  const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const diffDays = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000);
+
+  const fmtDay = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
+  const fmtWd = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' });
+  function dayLabel(key) {
+    const d = parseISO(key);
+    const label = `${fmtDay.format(d)}, ${fmtWd.format(d)}`;
+    return key === todayISO() ? `Сегодня · ${label}` : label;
+  }
+
+  /* ---------- состояние ---------- */
+  let state = load();
+
+  function load() {
+    const base = { amount: '', salaryDate: '', savings: 0, days: {}, saved: {}, calc: null };
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (!raw) return base;
+      const p = JSON.parse(raw) || {};
+      return {
+        amount: typeof p.amount === 'string' ? p.amount : '',
+        salaryDate: typeof p.salaryDate === 'string' ? p.salaryDate : '',
+        savings: Number.isFinite(p.savings) ? p.savings : 0,
+        days: (p.days && typeof p.days === 'object' && !Array.isArray(p.days)) ? p.days : {},
+        saved: (p.saved && typeof p.saved === 'object') ? p.saved : {},
+        calc: (p.calc && typeof p.calc === 'object' && Number.isFinite(p.calc.perDay)) ? p.calc : null
+      };
+    } catch (e) { return base; }
+  }
+  function save() {
+    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- расчёт и «заморозка» дневного лимита ---------- */
+  function recalc() {
+    const raw = state.amount === '' ? NaN : parseFloat(state.amount);
+    const amount = Number.isFinite(raw) && raw >= 0 ? raw : null;
+
+    let days = null;
+    if (state.salaryDate) {
+      const d = diffDays(todayISO(), state.salaryDate);
+      if (d >= 0) days = d + 1;
+    }
+
+    if (amount !== null && days !== null) {
+      state.calc = { perDay: amount / days, days, baseAmount: amount, salaryDate: state.salaryDate };
+    } else {
+      state.calc = null;
+    }
+    save();
+  }
+
+  function perDay() {
+    return state.calc ? state.calc.perDay : null;
+  }
+
+  function currentDaysLeft() {
+    if (!state.salaryDate) return null;
+    const d = diffDays(todayISO(), state.salaryDate);
+    return d >= 0 ? d + 1 : null;
+  }
+
+  const sumOf = list => list.reduce((s, x) => s + x.amount, 0);
+  const keysSorted = () => Object.keys(state.days).sort();
+
+  /* ---------- сводка ---------- */
+  function updateStats() {
+    const daysLeft = currentDaysLeft();
+    const pd = perDay();
+
+    $('#stDays').textContent = daysLeft !== null ? daysLeft : '—';
+    $('#stPerDay').textContent = pd !== null ? money(pd) : '—';
+
+    const todaySpent = sumOf(state.days[todayISO()] || []);
+    const tEl = $('#stToday');
+    tEl.textContent = money(todaySpent);
+    tEl.classList.remove('ok', 'bad');
+    if (pd !== null) {
+      if (todaySpent < pd) tEl.classList.add('ok');
+      else if (todaySpent > pd) tEl.classList.add('bad');
+    }
+
+    $('#stSaved').textContent = money(state.savings || 0);
+  }
+
+  /* ---------- карточка дня ---------- */
+  function buildDay(key) {
+    const pd = perDay();
+    const list = state.days[key] || [];
+    const total = sumOf(list);
+
+    const el = document.createElement('div');
+    el.className = 'day';
+    el.dataset.date = key;
+
+    /* шапка */
+    const head = document.createElement('div');
+    head.className = 'day-head';
+
+    const headLeft = document.createElement('div');
+    headLeft.className = 'day-head-left';
+
+    const dateEl = document.createElement('div');
+    dateEl.className = 'day-date';
+    dateEl.textContent = dayLabel(key);
+
+    const budgetEl = document.createElement('div');
+    budgetEl.className = 'day-budget';
+    budgetEl.textContent = pd !== null ? `бюджет ${money(pd)}` : 'бюджет не задан';
+
+    headLeft.append(dateEl, budgetEl);
+
+    const delDay = document.createElement('button');
+    delDay.type = 'button';
+    delDay.className = 'day-del';
+    delDay.textContent = '×';
+    delDay.setAttribute('aria-label', 'Удалить карточку дня');
+    delDay.addEventListener('click', () => {
+      if (!confirm('Удалить карточку этого дня и все её расходы?')) return;
+      deleteDay(key);
+    });
+
+    head.append(headLeft, delDay);
+    el.appendChild(head);
+
+    /* список трат */
+    const ul = document.createElement('ul');
+    ul.className = 'expenses';
+    list.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'expense';
+
+      const cat = document.createElement('span');
+      cat.className = 'cat';
+      cat.textContent = item.category;
+
+      const amt = document.createElement('span');
+      amt.className = 'amt';
+      amt.textContent = money(item.amount);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'del';
+      del.textContent = '×';
+      del.setAttribute('aria-label', 'Удалить');
+      del.addEventListener('click', () => {
+        state.days[key] = (state.days[key] || []).filter(x => x.id !== item.id);
+        save();
+        render();
+      });
+
+      li.append(cat, amt, del);
+      ul.appendChild(li);
+    });
+    el.appendChild(ul);
+
+    /* добавление траты внутри дня */
+    const form = document.createElement('form');
+    form.className = 'day-form';
+    form.autocomplete = 'off';
+
+    const sel = document.createElement('select');
+    CATS.forEach(c => {
+      const o = document.createElement('option');
+      o.textContent = c;
+      sel.appendChild(o);
+    });
+
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.step = 'any';
+    inp.min = '0';
+    inp.inputMode = 'decimal';
+    inp.placeholder = 'Сумма';
+
+    const add = document.createElement('button');
+    add.type = 'submit';
+    add.className = 'add';
+    add.textContent = '+';
+    add.setAttribute('aria-label', 'Добавить трату');
+
+    form.append(sel, inp, add);
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const val = parseFloat(inp.value);
+      if (!Number.isFinite(val) || val <= 0) { inp.focus(); return; }
+      addExpense(key, val, sel.value);
+    });
+    el.appendChild(form);
+
+    /* итог + копилка */
+    const foot = document.createElement('div');
+    foot.className = 'day-foot';
+
+    const tot = document.createElement('div');
+    tot.className = 'day-total';
+    if (pd === null) {
+      tot.classList.add('neutral');
+      tot.textContent = total > 0 ? `Потрачено ${money(total)}` : 'Нет трат';
+    } else {
+      const diff = pd - total;
+      if (diff >= 0) {
+        tot.classList.add('ok');
+        tot.textContent = `${money(total)} (остаток ${money(diff)})`;
+      } else {
+        tot.classList.add('over');
+        tot.textContent = `${money(total)} (перерасход ${money(-diff)})`;
+      }
+    }
+    foot.appendChild(tot);
+
+    const savedAmount = state.saved[key];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'save-btn';
+
+    if (savedAmount != null) {
+      btn.disabled = true;
+      btn.textContent = 'Накоплено ✓';
+    } else if (pd !== null && pd - total > 0) {
+      btn.textContent = `Накопить ${money(pd - total)}`;
+      btn.addEventListener('click', () => {
+        const rem = pd - total;
+        if (!(rem > 0)) return;
+        state.savings = (state.savings || 0) + rem;
+        state.saved[key] = rem;
+        save();
+        render();
+      });
+    } else {
+      btn.disabled = true;
+      btn.textContent = 'Накопить';
+    }
+    foot.appendChild(btn);
+
+    el.appendChild(foot);
+    return el;
+  }
+
+  /* ---------- статистика по категориям ---------- */
+  function collectStats() {
+    const from = $('#statsFrom').value || null;
+    const to = $('#statsTo').value || null;
+
+    const map = new Map();
+    let total = 0;
+    let dayCount = 0;
+
+    keysSorted().forEach(k => {
+      if (from && k < from) return;
+      if (to && k > to) return;
+      const list = state.days[k] || [];
+      if (!list.length) return;
+      dayCount++;
+      list.forEach(it => {
+        total += it.amount;
+        map.set(it.category, (map.get(it.category) || 0) + it.amount);
+      });
+    });
+
+    const rows = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    return { rows, total, dayCount, filtered: !!(from || to) };
+  }
+
+  function renderStats() {
+    const wrap = $('#statsResult');
+    wrap.innerHTML = '';
+
+    const { rows, total, dayCount, filtered } = collectStats();
+
+    if (!rows.length) {
+      const p = document.createElement('p');
+      p.className = 'empty';
+      p.textContent = filtered
+        ? 'Нет трат за выбранный период.'
+        : 'Пока нет трат. Добавьте расходы в карточках дней.';
+      wrap.appendChild(p);
+      return;
+    }
+
+    const summary = document.createElement('p');
+    summary.className = 'stats-summary';
+    summary.innerHTML = `Итого: <b>${money(total)}</b> · ${dayCount} ${pluralDays(dayCount)} с тратами`;
+    wrap.appendChild(summary);
+
+    rows.forEach(([cat, sum]) => {
+      const pct = total > 0 ? (sum / total) * 100 : 0;
+      const color = CAT_COLORS[cat] || 'var(--muted)';
+
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+
+      const top = document.createElement('div');
+      top.className = 'stat-top';
+
+      const dot = document.createElement('span');
+      dot.className = 'stat-dot';
+      dot.style.background = color;
+
+      const catEl = document.createElement('span');
+      catEl.className = 'stat-cat';
+      catEl.textContent = cat;
+
+      const sumEl = document.createElement('span');
+      sumEl.className = 'stat-sum';
+      sumEl.textContent = money(sum);
+
+      const pctEl = document.createElement('span');
+      pctEl.className = 'stat-pct';
+      pctEl.textContent = pctFmt.format(pct) + '%';
+
+      top.append(dot, catEl, sumEl, pctEl);
+
+      const bar = document.createElement('div');
+      bar.className = 'stat-bar';
+      const fill = document.createElement('i');
+      fill.style.width = Math.min(100, pct) + '%';
+      fill.style.background = color;
+      bar.appendChild(fill);
+
+      row.append(top, bar);
+      wrap.appendChild(row);
+    });
+  }
+
+  function pluralDays(n) {
+    const a = Math.abs(n) % 100;
+    const b = a % 10;
+    if (a > 10 && a < 20) return 'дней';
+    if (b === 1) return 'день';
+    if (b >= 2 && b <= 4) return 'дня';
+    return 'дней';
+  }
+
+  /* ---------- рендер ---------- */
+  function render() {
+    updateStats();
+    renderDays();
+    renderStats();
+    updateAddButton();
+  }
+
+  function renderDays() {
+    const keys = keysSorted();
+
+    const mainWrap = $('#daysMain');
+    mainWrap.innerHTML = '';
+    if (!keys.length) {
+      mainWrap.innerHTML = '<p class="empty">Пока нет карточек дней. Выберите дату и нажмите «Добавить расход».</p>';
+    } else {
+      mainWrap.appendChild(buildDay(keys[keys.length - 1]));
+    }
+
+    const histWrap = $('#daysHistory');
+    histWrap.innerHTML = '';
+    if (!keys.length) {
+      histWrap.innerHTML = '<p class="empty">История пуста.</p>';
+    } else {
+      keys.slice().reverse().forEach(k => histWrap.appendChild(buildDay(k)));
+    }
+  }
+
+  /* ---------- кнопка «Добавить расход» ---------- */
+  function updateAddButton() {
+    const key = $('#eDate').value || todayISO();
+    const exists = !!state.days[key];
+    const btn = $('#addDayBtn');
+    btn.disabled = exists;
+    btn.textContent = exists ? 'Карточка уже создана' : 'Добавить расход';
+  }
+
+  /* ---------- действия ---------- */
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function addExpense(key, amount, category) {
+    if (!state.days[key]) state.days[key] = [];
+    state.days[key].push({ id: uid(), amount, category });
+    save();
+    render();
+    const pane = document.querySelector('.tabpane:not([hidden])');
+    const el = pane && pane.querySelector(`.day[data-date="${key}"]`);
+    if (el) {
+      const inp = el.querySelector('.day-form input');
+      if (inp) inp.focus();
+    }
+  }
+
+  function deleteDay(key) {
+    if (state.saved[key] != null) {
+      state.savings = Math.max(0, (state.savings || 0) - state.saved[key]);
+      delete state.saved[key];
+    }
+    delete state.days[key];
+    save();
+    render();
+  }
+
+  function setTab(name) {
+    document.querySelectorAll('.tabs button').forEach(b =>
+      b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tabpane').forEach(p => {
+      p.hidden = p.id !== 'tab-' + name;
+    });
+  }
+
+  function flash(key) {
+    const pane = document.querySelector('.tabpane:not([hidden])');
+    const el = pane && pane.querySelector(`.day[data-date="${key}"]`);
+    if (!el) return;
+    el.classList.add('flash');
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => el.classList.remove('flash'), 900);
+  }
+
+  /* ---------- инициализация ---------- */
+  const amountInput = $('#amount');
+  const salaryInput = $('#salaryDate');
+  const eDate = $('#eDate');
+
+  amountInput.value = state.amount;
+  salaryInput.value = state.salaryDate;
+  eDate.value = todayISO();
+
+  if (!state.calc && state.amount !== '' && state.salaryDate) {
+    recalc();
+  }
+
+  amountInput.addEventListener('input', () => {
+    state.amount = amountInput.value;
+    recalc();
+    render();
+  });
+
+  salaryInput.addEventListener('input', () => {
+    state.salaryDate = salaryInput.value;
+    recalc();
+    render();
+  });
+
+  eDate.addEventListener('input', updateAddButton);
+  eDate.addEventListener('change', updateAddButton);
+
+  $('#expenseForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const key = eDate.value || todayISO();
+
+    if (!state.days[key]) {
+      state.days[key] = [];
+      save();
+    }
+
+    const keys = keysSorted();
+    const isLatest = key === keys[keys.length - 1];
+    setTab(isLatest ? 'main' : 'history');
+    render();
+    flash(key);
+  });
+
+  ['statsFrom', 'statsTo'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', renderStats);
+    el.addEventListener('change', renderStats);
+  });
+
+  $('#statsReset').addEventListener('click', () => {
+    $('#statsFrom').value = '';
+    $('#statsTo').value = '';
+    renderStats();
+  });
+
+  document.querySelectorAll('.tabs button').forEach(b => {
+    b.addEventListener('click', () => setTab(b.dataset.tab));
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
