@@ -271,29 +271,20 @@
     padding:26px 0 8px;
   }
 
-  /* --- экран авторизации --- */
-  .auth-wrap{
-    max-width:360px;margin:0 auto;padding:60px 20px 40px;
-  }
+  .auth-wrap{max-width:360px;margin:0 auto;padding:60px 20px 40px}
   .auth-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:22px;
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);padding:22px;
   }
   .auth-card h2{
     font-size:16px;text-transform:none;letter-spacing:-.01em;
     color:var(--text);font-weight:650;margin:0 0 16px;
   }
   .auth-card label + label{margin-top:12px}
-  .auth-msg{
-    margin-top:12px;font-size:12.5px;min-height:18px;
-    color:var(--bad);
-  }
+  .auth-msg{margin-top:12px;font-size:12.5px;min-height:18px;color:var(--bad)}
   .auth-msg.ok{color:var(--ok)}
   .auth-switch{
-    margin-top:14px;font-size:12.5px;color:var(--muted);
-    text-align:center;
+    margin-top:14px;font-size:12.5px;color:var(--muted);text-align:center;
   }
   .auth-switch button{
     background:none;border:none;padding:0;cursor:pointer;
@@ -301,22 +292,20 @@
     text-decoration:underline;text-underline-offset:2px;
   }
   .signout{
-    display:block;margin:0 auto 0 auto;
+    display:block;margin:0;
     font-size:12px;color:var(--muted);
     background:none;border:none;cursor:pointer;
     text-decoration:underline;text-underline-offset:2px;
     padding:0;
   }
   .signout:hover{color:var(--text)}
-
   .user-bar{
     display:flex;justify-content:space-between;align-items:center;
     gap:12px;margin-bottom:14px;
     font-size:12px;color:var(--muted);
   }
   .user-bar .email{
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
   }
 
   @media (max-width:520px){
@@ -328,7 +317,6 @@
 </head>
 <body>
 
-<!-- ================= АВТОРИЗАЦИЯ ================= -->
 <div id="auth-screen" class="auth-wrap">
   <header style="margin-bottom:18px;text-align:center">
     <h1>Дневной бюджет</h1>
@@ -353,7 +341,6 @@
   </div>
 </div>
 
-<!-- ================= ПРИЛОЖЕНИЕ ================= -->
 <main id="app" style="display:none">
   <div class="user-bar">
     <span class="email" id="user-email"></span>
@@ -436,8 +423,7 @@
     getFirestore,
     doc,
     setDoc,
-    onSnapshot,
-    getDoc
+    onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -453,10 +439,9 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // Долгая сессия: пользователь остаётся в системе между визитами
   setPersistence(auth, browserLocalPersistence).catch(() => {});
 
-  /* ============ Константы приложения ============ */
+  /* ---------- константы ---------- */
   const CATS = [
     'Еда на улице',
     'Обеды на работе',
@@ -507,7 +492,7 @@
     return key === todayISO() ? `Сегодня · ${label}` : label;
   }
 
-  /* ============ Состояние ============ */
+  /* ---------- состояние ---------- */
   const emptyState = () => ({
     amount: '',
     salaryDate: '',
@@ -520,8 +505,6 @@
   });
 
   let state = emptyState();
-
-  // Ссылки Firebase для текущего пользователя
   let userDocRef = null;
   let unsubscribeSnapshot = null;
   let isApplyingRemote = false;
@@ -541,10 +524,9 @@
     };
   }
 
-  // Сохранение: с дебаунсом, чтобы не спамить Firestore при быстром вводе
   function save() {
     if (!userDocRef) return;
-    if (isApplyingRemote) return; // не пишем обратно то, что только что получили
+    if (isApplyingRemote) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       setDoc(userDocRef, state).catch(err => {
@@ -553,7 +535,7 @@
     }, 250);
   }
 
-  /* ============ Расчёты ============ */
+  /* ---------- расчёты ---------- */
   function recalc() {
     const raw = state.amount === '' ? NaN : parseFloat(state.amount);
     const amount = Number.isFinite(raw) && raw >= 0 ? raw : null;
@@ -582,7 +564,7 @@
     return d >= 0 ? d + 1 : null;
   }
 
-  /* ============ Сводка ============ */
+  /* ---------- сводка ---------- */
   function updateStats() {
     const daysLeft = currentDaysLeft();
     const pd = perDay();
@@ -595,15 +577,14 @@
     tEl.textContent = money(todaySpent);
     tEl.classList.remove('ok', 'bad');
     if (pd !== null) {
-      if (todaySpent < pd) tEl.classList.add('ok');
-      else if (todaySpent > pd) tEl.classList.add('over');
-      else if (todaySpent > pd) tEl.classList.add('bad');
+      if (todaySpent > pd) tEl.classList.add('bad');
+      else tEl.classList.add('ok');
     }
 
     $('#stSaved').textContent = money(state.savings || 0);
   }
 
-  /* ============ Карточка дня ============ */
+  /* ---------- карточка дня ---------- */
   function buildDay(key) {
     const pd = perDay();
     const list = state.days[key] || [];
@@ -613,7 +594,6 @@
     el.className = 'day';
     el.dataset.date = key;
 
-    /* шапка */
     const head = document.createElement('div');
     head.className = 'day-head';
 
@@ -643,7 +623,6 @@
     head.append(headLeft, delDay);
     el.appendChild(head);
 
-    /* список трат */
     const ul = document.createElement('ul');
     ul.className = 'expenses';
     list.forEach(item => {
@@ -674,7 +653,6 @@
     });
     el.appendChild(ul);
 
-    /* добавление траты */
     const form = document.createElement('form');
     form.className = 'day-form';
     form.autocomplete = 'off';
@@ -708,7 +686,6 @@
     });
     el.appendChild(form);
 
-    /* итог + действия */
     const foot = document.createElement('div');
     foot.className = 'day-foot';
 
@@ -736,7 +713,6 @@
     const coveredAmount = state.covered[key];
     const deductedAmount = state.deducted[key];
 
-    /* --- Накопить --- */
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button';
     saveBtn.className = 'save-btn';
@@ -760,7 +736,6 @@
     }
     actions.appendChild(saveBtn);
 
-    /* --- Перерасход --- */
     const over = pd !== null ? total - pd : 0;
 
     if (coveredAmount != null) {
@@ -834,7 +809,7 @@
     return el;
   }
 
-  /* ============ Статистика ============ */
+  /* ---------- статистика ---------- */
   function collectStats() {
     const from = $('#statsFrom').value || null;
     const to = $('#statsTo').value || null;
@@ -857,6 +832,15 @@
 
     const rows = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
     return { rows, total, dayCount, filtered: !!(from || to) };
+  }
+
+  function pluralDays(n) {
+    const a = Math.abs(n) % 100;
+    const b = a % 10;
+    if (a > 10 && a < 20) return 'дней';
+    if (b === 1) return 'день';
+    if (b >= 2 && b <= 4) return 'дня';
+    return 'дней';
   }
 
   function renderStats() {
@@ -920,16 +904,7 @@
     });
   }
 
-  function pluralDays(n) {
-    const a = Math.abs(n) % 100;
-    const b = a % 10;
-    if (a > 10 && a < 20) return 'дней';
-    if (b === 1) return 'день';
-    if (b >= 2 && b <= 4) return 'дня';
-    return 'дней';
-  }
-
-  /* ============ Рендер ============ */
+  /* ---------- рендер ---------- */
   function render() {
     updateStats();
     renderDays();
@@ -965,7 +940,7 @@
     btn.textContent = exists ? 'Карточка уже создана' : 'Добавить расход';
   }
 
-  /* ============ Действия ============ */
+  /* ---------- действия ---------- */
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
@@ -1017,7 +992,7 @@
     setTimeout(() => el.classList.remove('flash'), 900);
   }
 
-  /* ============ Привязка данных к UI ============ */
+  /* ---------- UI-привязки ---------- */
   const amountInput = $('#amount');
   const salaryInput = $('#salaryDate');
   const eDate = $('#eDate');
@@ -1069,8 +1044,8 @@
     b.addEventListener('click', () => setTab(b.dataset.tab));
   });
 
-  /* ============ Авторизация ============ */
-  let authMode = 'login'; // 'login' | 'signup'
+  /* ---------- авторизация ---------- */
+  let authMode = 'login';
 
   const authScreen = $('#auth-screen');
   const appScreen = $('#app');
@@ -1153,6 +1128,7 @@
       case 'auth/invalid-credential': return 'Неверный email или пароль.';
       case 'auth/too-many-requests': return 'Слишком много попыток. Попробуйте позже.';
       case 'auth/network-request-failed': return 'Нет соединения с интернетом.';
+      case 'auth/unauthorized-domain': return 'Домен не разрешён в Firebase. Добавьте его в Authentication → Settings.';
       default: return 'Ошибка входа: ' + (err && err.message ? err.message : 'неизвестная');
     }
   }
@@ -1166,13 +1142,11 @@
     await signOut(auth);
   });
 
-  /* ============ Подключение данных при входе ============ */
   function attachUser(user) {
     userEmail.textContent = user.email || '';
 
     userDocRef = doc(db, 'users', user.uid, 'budgetData', 'main');
 
-    // Подписка на изменения — это и есть синхронизация в реальном времени
     if (unsubscribeSnapshot) unsubscribeSnapshot();
     unsubscribeSnapshot = onSnapshot(userDocRef, (snap) => {
       isApplyingRemote = true;
@@ -1180,12 +1154,10 @@
         if (snap.exists()) {
           state = normalizeState(snap.data());
         } else {
-          // Первый вход — создаём пустой документ
           state = emptyState();
           setDoc(userDocRef, state).catch(() => {});
         }
 
-        // Синхронизируем поля ввода и перерисовываем
         if (document.activeElement !== amountInput) amountInput.value = state.amount;
         if (document.activeElement !== salaryInput) salaryInput.value = state.salaryDate;
         render();
@@ -1226,7 +1198,6 @@
     }
   });
 
-  // Начальная отрисовка пустого состояния (пока нет пользователя)
   setAuthMode('login');
   eDate.value = todayISO();
 })();
