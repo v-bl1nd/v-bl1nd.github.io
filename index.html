@@ -290,7 +290,9 @@
     'Услуги по уходу',
     'Развлечения',
     'В дом',
-    'Бытовые нужды',
+    'Еда/Химия',
+    'Транспорт',
+    'Машина',
     'Займы',
     'Сервисы/Подписки'
   ];
@@ -305,9 +307,16 @@
     'Услуги по уходу':    '#14b8a6',
     'Развлечения':        '#6366f1',
     'В дом':              '#16a34a',
-    'Бытовые нужды':      '#65a30d',
+    'Еда/Химия':          '#65a30d',
+    'Транспорт':          '#0284c7',
+    'Машина':             '#be123c',
     'Займы':              '#78716c',
     'Сервисы/Подписки':   '#3b82f6'
+  };
+
+  // Миграция названий категорий в уже сохранённых данных
+  const CATEGORY_RENAMES = {
+    'Бытовые нужды': 'Еда/Химия'
   };
 
   const $ = s => document.querySelector(s);
@@ -350,11 +359,24 @@
 
   function normalizeState(p) {
     if (!p || typeof p !== 'object') return emptyState();
+
+    const days = (p.days && typeof p.days === 'object' && !Array.isArray(p.days)) ? p.days : {};
+    // Прогоняем миграцию названий категорий
+    Object.keys(days).forEach(key => {
+      const list = days[key];
+      if (!Array.isArray(list)) return;
+      list.forEach(item => {
+        if (item && CATEGORY_RENAMES[item.category]) {
+          item.category = CATEGORY_RENAMES[item.category];
+        }
+      });
+    });
+
     return {
       amount: typeof p.amount === 'string' ? p.amount : '',
       salaryDate: typeof p.salaryDate === 'string' ? p.salaryDate : '',
       savings: Number.isFinite(p.savings) ? p.savings : 0,
-      days: (p.days && typeof p.days === 'object' && !Array.isArray(p.days)) ? p.days : {},
+      days,
       saved: (p.saved && typeof p.saved === 'object') ? p.saved : {},
       covered: (p.covered && typeof p.covered === 'object') ? p.covered : {},
       deducted: (p.deducted && typeof p.deducted === 'object') ? p.deducted : {},
