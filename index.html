@@ -8,13 +8,15 @@
 <style>
   :root{
     --bg:#f5f5f7; --card:#ffffff; --input:#ffffff; --text:#131316;
-    --muted:#86868b; --line:#e6e6ea; --ok:#0f8a5f; --bad:#d3392f; --radius:16px;
+    --muted:#86868b; --line:#e6e6ea; --ok:#0f8a5f; --bad:#d3392f;
+    --warn:#a16207; --radius:16px;
   }
   @media (prefers-color-scheme: dark){
     :root{
       color-scheme: dark;
       --bg:#0d0d0f; --card:#161619; --input:#0f0f12; --text:#f2f2f5;
       --muted:#8b8b93; --line:#26262c; --ok:#35d399; --bad:#ff6f64;
+      --warn:#fbbf24;
     }
   }
   *{box-sizing:border-box}
@@ -93,6 +95,7 @@
     line-height:1;padding:2px 5px;border-radius:7px;opacity:.45;
     transition:opacity .15s,color .15s;}
   .del:hover{opacity:1;color:var(--bad)}
+  .del[disabled]{visibility:hidden}
   .day-form{display:flex;align-items:center;gap:8px}
   .day-form select,.day-form input{margin-top:0;height:42px}
   .day-form select{flex:1;min-width:0}
@@ -110,16 +113,22 @@
   .day-total.over{color:var(--bad)}
   .day-total.neutral{color:var(--muted);font-weight:500}
   .day-actions{display:flex;flex-wrap:wrap;gap:8px}
-  .save-btn{flex:none;height:34px;padding:0 13px;font:inherit;font-size:12.5px;
-    font-weight:600;color:var(--text);background:var(--input);border:1px solid var(--line);
-    border-radius:9px;cursor:pointer;white-space:nowrap;transition:opacity .15s;}
-  .save-btn:not(:disabled):hover{opacity:.75}
-  .save-btn:disabled{opacity:.45;cursor:default}
-  .cover-btn{flex:none;height:34px;padding:0 13px;font:inherit;font-size:12.5px;
-    font-weight:600;color:var(--bad);background:var(--input);border:1px solid var(--line);
-    border-radius:9px;cursor:pointer;white-space:nowrap;transition:opacity .15s;}
-  .cover-btn:not(:disabled):hover{opacity:.75}
-  .cover-btn:disabled{opacity:.45;cursor:default}
+
+  /* Кнопка "Завершить день" и её финальные состояния */
+  .finish-btn{
+    flex:none;height:34px;padding:0 14px;
+    font:inherit;font-size:12.5px;font-weight:600;
+    color:var(--text);background:var(--input);
+    border:1px solid var(--line);border-radius:9px;
+    cursor:pointer;white-space:nowrap;
+    transition:opacity .15s;
+  }
+  .finish-btn:not(:disabled):hover{opacity:.75}
+  .finish-btn:disabled{cursor:default}
+  .finish-btn.saved{color:var(--ok);opacity:1}
+  .finish-btn.covered{color:var(--warn);opacity:1}
+  .finish-btn.deducted{color:var(--bad);opacity:1}
+
   .stats-summary{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;
     margin:0 0 14px;}
   .stats-summary b{color:var(--text);font-weight:650}
@@ -294,7 +303,8 @@
     'Транспорт',
     'Машина',
     'Займы',
-    'Сервисы/Подписки'
+    'Сервисы/Подписки',
+    'Иные списания'
   ];
 
   const CAT_COLORS = {
@@ -311,10 +321,10 @@
     'Транспорт':          '#0284c7',
     'Машина':             '#be123c',
     'Займы':              '#78716c',
-    'Сервисы/Подписки':   '#3b82f6'
+    'Сервисы/Подписки':   '#3b82f6',
+    'Иные списания':      '#64748b'
   };
 
-  // Миграция названий категорий в уже сохранённых данных
   const CATEGORY_RENAMES = {
     'Бытовые нужды': 'Еда/Химия'
   };
@@ -348,6 +358,7 @@
     saved: {},
     covered: {},
     deducted: {},
+    finished: {},
     calc: null
   });
 
@@ -361,7 +372,6 @@
     if (!p || typeof p !== 'object') return emptyState();
 
     const days = (p.days && typeof p.days === 'object' && !Array.isArray(p.days)) ? p.days : {};
-    // Прогоняем миграцию названий категорий
     Object.keys(days).forEach(key => {
       const list = days[key];
       if (!Array.isArray(list)) return;
@@ -380,6 +390,7 @@
       saved: (p.saved && typeof p.saved === 'object') ? p.saved : {},
       covered: (p.covered && typeof p.covered === 'object') ? p.covered : {},
       deducted: (p.deducted && typeof p.deducted === 'object') ? p.deducted : {},
+      finished: (p.finished && typeof p.finished === 'object') ? p.finished : {},
       calc: (p.calc && typeof p.calc === 'object' && Number.isFinite(p.calc.perDay)) ? p.calc : null
     };
   }
@@ -450,10 +461,21 @@
     const list = state.days[key] || [];
     const total = sumOf(list);
 
+    const finished = state.finished[key];
+    const savedAmount = state.saved[key];
+    const coveredAmount = state.covered[key];
+    const deductedAmount = state.deducted[key];
+    const isFinished = !!(finished || savedAmount != null || coveredAmount != null || deductedAmount != null);
+    const isFuture = key > todayISO();
+
+    // Для завершённых дней показываем тот лимит, который был на момент завершения
+    const pdDisplay = (finished && Number.isFinite(finished.pd)) ? finished.pd : pd;
+
     const el = document.createElement('div');
     el.className = 'day';
     el.dataset.date = key;
 
+    /* шапка */
     const head = document.createElement('div');
     head.className = 'day-head';
 
@@ -466,7 +488,7 @@
 
     const budgetEl = document.createElement('div');
     budgetEl.className = 'day-budget';
-    budgetEl.textContent = pd !== null ? `бюджет ${money(pd)}` : 'бюджет не задан';
+    budgetEl.textContent = pdDisplay !== null ? `бюджет ${money(pdDisplay)}` : 'бюджет не задан';
 
     headLeft.append(dateEl, budgetEl);
 
@@ -483,6 +505,7 @@
     head.append(headLeft, delDay);
     el.appendChild(head);
 
+    /* список трат */
     const ul = document.createElement('ul');
     ul.className = 'expenses';
     list.forEach(item => {
@@ -502,17 +525,22 @@
       del.className = 'del';
       del.textContent = '×';
       del.setAttribute('aria-label', 'Удалить');
-      del.addEventListener('click', () => {
-        state.days[key] = (state.days[key] || []).filter(x => x.id !== item.id);
-        save();
-        render();
-      });
+      if (isFinished) {
+        del.disabled = true;
+      } else {
+        del.addEventListener('click', () => {
+          state.days[key] = (state.days[key] || []).filter(x => x.id !== item.id);
+          save();
+          render();
+        });
+      }
 
       li.append(cat, amt, del);
       ul.appendChild(li);
     });
     el.appendChild(ul);
 
+    /* добавление траты */
     const form = document.createElement('form');
     form.className = 'day-form';
     form.autocomplete = 'off';
@@ -540,22 +568,26 @@
     form.append(sel, inp, add);
     form.addEventListener('submit', e => {
       e.preventDefault();
+      if (isFinished) return;
       const val = parseFloat(inp.value);
       if (!Number.isFinite(val) || val <= 0) { inp.focus(); return; }
       addExpense(key, val, sel.value);
     });
+
+    if (isFinished) form.style.display = 'none';
     el.appendChild(form);
 
+    /* итог + кнопка завершения */
     const foot = document.createElement('div');
     foot.className = 'day-foot';
 
     const tot = document.createElement('div');
     tot.className = 'day-total';
-    if (pd === null) {
+    if (pdDisplay === null) {
       tot.classList.add('neutral');
       tot.textContent = total > 0 ? `Потрачено ${money(total)}` : 'Нет трат';
     } else {
-      const diff = pd - total;
+      const diff = pdDisplay - total;
       if (diff >= 0) {
         tot.classList.add('ok');
         tot.textContent = `${money(total)} (остаток ${money(diff)})`;
@@ -569,104 +601,95 @@
     const actions = document.createElement('div');
     actions.className = 'day-actions';
 
-    const savedAmount = state.saved[key];
-    const coveredAmount = state.covered[key];
-    const deductedAmount = state.deducted[key];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'finish-btn';
 
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.className = 'save-btn';
+    let finishStatus = null;
+    if (finished && finished.status) finishStatus = finished.status;
+    else if (savedAmount != null) finishStatus = 'saved';
+    else if (coveredAmount != null) finishStatus = 'covered';
+    else if (deductedAmount != null) finishStatus = 'deducted';
 
-    if (savedAmount != null) {
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Накоплено ✓';
-    } else if (pd !== null && pd - total > 0) {
-      saveBtn.textContent = `Накопить ${money(pd - total)}`;
-      saveBtn.addEventListener('click', () => {
-        const rem = pd - total;
-        if (!(rem > 0)) return;
-        state.savings = (state.savings || 0) + rem;
-        state.saved[key] = rem;
-        save();
-        render();
-      });
+    if (finishStatus === 'saved') {
+      btn.textContent = 'Накоплено ✓';
+      btn.classList.add('saved');
+      btn.disabled = true;
+    } else if (finishStatus === 'covered') {
+      btn.textContent = 'Перерасход покрыт ✓';
+      btn.classList.add('covered');
+      btn.disabled = true;
+    } else if (finishStatus === 'deducted') {
+      btn.textContent = 'Доступная сумма пересчитана ✓';
+      btn.classList.add('deducted');
+      btn.disabled = true;
+    } else if (isFuture || pd === null) {
+      btn.textContent = 'Завершить день';
+      btn.disabled = true;
     } else {
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Накопить';
-    }
-    actions.appendChild(saveBtn);
-
-    const over = pd !== null ? total - pd : 0;
-
-    if (coveredAmount != null) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'cover-btn';
-      b.disabled = true;
-      b.textContent = 'Перерасход покрыт ✓';
-      actions.appendChild(b);
-    } else if (deductedAmount != null) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'cover-btn';
-      b.disabled = true;
-      b.textContent = 'Перерасход вычтен ✓';
-      actions.appendChild(b);
-    } else if (over > 0) {
-      const available = state.savings || 0;
-
-      if (available >= over) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'cover-btn';
-        b.textContent = `Списать ${money(over)} из копилки`;
-        b.addEventListener('click', () => {
-          const rem = Math.min(total - pd, state.savings || 0);
-          if (!(rem > 0)) return;
-          state.savings = Math.max(0, (state.savings || 0) - rem);
-          state.covered[key] = rem;
-          save();
-          render();
-        });
-        actions.appendChild(b);
-      } else {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'cover-btn';
-        b.textContent = available > 0
-          ? `Вычесть ${money(over - available)} из суммы`
-          : `Вычесть ${money(over)} из суммы`;
-        b.addEventListener('click', () => {
-          if (!state.calc) return;
-          const lack = Math.max(0, (total - pd) - (state.savings || 0));
-          if (!(lack > 0)) return;
-          const fromPocket = Math.min(state.savings || 0, total - pd);
-          if (fromPocket > 0) {
-            state.savings = Math.max(0, (state.savings || 0) - fromPocket);
-          }
-          state.calc.baseAmount = Math.max(0, state.calc.baseAmount - lack);
-          const daysLeft = state.calc.days;
-          if (daysLeft > 0) {
-            state.calc.perDay = state.calc.baseAmount / daysLeft;
-          }
-          state.deducted[key] = total - pd;
-          save();
-          render();
-        });
-        actions.appendChild(b);
-      }
-    } else {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'cover-btn';
-      b.disabled = true;
-      b.textContent = 'Нет перерасхода';
-      actions.appendChild(b);
+      btn.textContent = 'Завершить день';
+      btn.addEventListener('click', () => finishDay(key));
     }
 
+    actions.appendChild(btn);
     foot.appendChild(actions);
     el.appendChild(foot);
     return el;
+  }
+
+  /* ---------- завершение дня ---------- */
+  function finishDay(key) {
+    if (!state.calc) return;
+    if (state.finished[key] || state.saved[key] != null || state.covered[key] != null || state.deducted[key] != null) return;
+
+    const pd = state.calc.perDay;
+    if (pd === null || pd === undefined) return;
+
+    if (!confirm('Завершить день и зафиксировать результат?')) return;
+
+    const list = state.days[key] || [];
+    const spent = sumOf(list);
+    const overage = spent - pd;
+    const available = state.savings || 0;
+
+    let status, baseDelta, savingsDelta;
+
+    if (overage <= 0) {
+      // Остаток → в копилку. Из «суммы на руках» уходит ровно дневной лимит.
+      const remainder = -overage;
+      state.savings = available + remainder;
+      state.saved[key] = remainder;
+      baseDelta = pd;
+      savingsDelta = remainder;
+      status = 'saved';
+    } else if (available >= overage) {
+      // Перерасход полностью покрыт копилкой.
+      state.savings = available - overage;
+      state.covered[key] = overage;
+      baseDelta = pd;
+      savingsDelta = -overage;
+      status = 'covered';
+    } else {
+      // Не хватает копилки — недостача списывается из «суммы на руках».
+      const fromPocket = overage - available;
+      state.savings = 0;
+      state.deducted[key] = overage;
+      baseDelta = pd + fromPocket;
+      savingsDelta = -available;
+      status = 'deducted';
+    }
+
+    state.calc.baseAmount = Math.max(0, state.calc.baseAmount - baseDelta);
+    state.calc.days = Math.max(1, (state.calc.days || 1) - 1);
+    state.calc.perDay = state.calc.baseAmount / state.calc.days;
+
+    state.amount = String(Math.round(state.calc.baseAmount * 100) / 100);
+    if (amountInput) amountInput.value = state.amount;
+
+    state.finished[key] = { status, pd, baseDelta, savingsDelta, daysDelta: 1 };
+
+    save();
+    render();
   }
 
   /* ---------- статистика ---------- */
@@ -819,18 +842,31 @@
   }
 
   function deleteDay(key) {
-    if (state.saved[key] != null) {
-      state.savings = Math.max(0, (state.savings || 0) - state.saved[key]);
-      delete state.saved[key];
+    const fin = state.finished[key];
+    if (fin && state.calc) {
+      // Откат расчёта
+      state.calc.baseAmount = Math.max(0, state.calc.baseAmount + (fin.baseDelta || 0));
+      state.calc.days = Math.max(1, (state.calc.days || 0) + (fin.daysDelta || 1));
+      state.calc.perDay = state.calc.baseAmount / state.calc.days;
+      state.savings = Math.max(0, (state.savings || 0) - (fin.savingsDelta || 0));
+      state.amount = String(Math.round(state.calc.baseAmount * 100) / 100);
+      if (amountInput) amountInput.value = state.amount;
+    } else {
+      // Старые записи без state.finished — откатываем только копилку
+      if (state.saved[key] != null) {
+        state.savings = Math.max(0, (state.savings || 0) - state.saved[key]);
+      }
+      if (state.covered[key] != null) {
+        state.savings = (state.savings || 0) + state.covered[key];
+      }
     }
-    if (state.covered[key] != null) {
-      state.savings = (state.savings || 0) + state.covered[key];
-      delete state.covered[key];
-    }
-    if (state.deducted[key] != null) {
-      delete state.deducted[key];
-    }
+
+    delete state.saved[key];
+    delete state.covered[key];
+    delete state.deducted[key];
+    delete state.finished[key];
     delete state.days[key];
+
     save();
     render();
   }
