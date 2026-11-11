@@ -54,6 +54,7 @@
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   input[type=number]{-moz-appearance:textfield;appearance:textfield}
+  
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 10px;
     margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
   .stat{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -63,46 +64,57 @@
     letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .stat .v.ok{color:var(--ok)}
   .stat .v.bad{color:var(--bad)}
+  
   .btn{display:block;width:100%;height:44px;margin-top:14px;font:inherit;font-weight:550;
     color:var(--card);background:var(--text);border:none;border-radius:12px;
     cursor:pointer;transition:opacity .15s;}
   .btn:hover{opacity:.86}
   .btn:active{opacity:.72}
   .btn:disabled,.btn:disabled:hover{opacity:.35;cursor:default}
+  .btn-outline{display:block;width:100%;height:42px;margin-top:12px;font:inherit;font-weight:600;
+    font-size:13px;color:var(--text);background:transparent;border:1px solid var(--line);
+    border-radius:11px;cursor:pointer;transition:background .15s;}
+  .btn-outline:hover{background:rgba(128,128,128,.05)}
+  
   .link-btn{margin-top:12px;padding:0;font:inherit;font-size:12.5px;font-weight:550;
     color:var(--muted);background:none;border:none;cursor:pointer;
     text-decoration:underline;text-underline-offset:2px;}
   .link-btn:hover{color:var(--text)}
+  
   .day{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     padding:16px;margin-bottom:12px;animation:appear .25s ease;}
   @keyframes appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
   .day.flash{animation:flash .9s ease}
   @keyframes flash{0%{box-shadow:0 0 0 3px rgba(128,128,140,.35)}
     100%{box-shadow:0 0 0 0 rgba(128,128,140,0)}}
+  
   .day-head{display:flex;justify-content:space-between;align-items:flex-start;
-    gap:12px;margin-bottom:10px;}
+    gap:12px;margin-bottom:12px;}
   .day-head-left{min-width:0}
   .day-date{font-weight:600;font-size:15px;letter-spacing:-.01em}
   .day-budget{font-size:12px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
-  .day-del{flex:none;width:28px;height:28px;padding:0;margin:-4px -4px 0 0;
+  .day-head-right{display:flex;align-items:center;gap:6px;flex:none}
+  
+  .day-del{width:28px;height:28px;padding:0;margin:-4px -4px 0 0;
     display:grid;place-items:center;font-size:17px;line-height:1;
     color:var(--muted);background:transparent;border:none;border-radius:50%;
     cursor:pointer;opacity:.5;transition:opacity .15s,color .15s,background .15s;}
   .day-del:hover{opacity:1;color:var(--bad);background:rgba(211,57,47,.09)}
-  .expenses{list-style:none;margin:0 0 12px;padding:0}
-  .expenses:empty{display:none}
-  .expense{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px;
-    border-bottom:1px solid var(--line);}
-  .expense:last-child{border-bottom:none}
-  .expense .cat{flex:1;min-width:0;color:var(--muted);overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;}
-  .expense .amt{font-weight:550;font-variant-numeric:tabular-nums}
-  .del{border:none;background:none;cursor:pointer;color:var(--muted);font-size:17px;
-    line-height:1;padding:2px 5px;border-radius:7px;opacity:.45;
-    transition:opacity .15s,color .15s;}
-  .del:hover{opacity:1;color:var(--bad)}
-  .del[disabled]{visibility:hidden}
-  .day-form{display:flex;align-items:center;gap:8px}
+  
+  .day-edit{width:28px;height:28px;padding:0;margin:-4px -4px 0 0;
+    display:grid;place-items:center;font-size:15px;line-height:1;
+    color:var(--muted);background:transparent;border:none;border-radius:50%;
+    cursor:pointer;opacity:.5;transition:opacity .15s,color .15s,background .15s;}
+  .day-edit:hover{opacity:1;color:var(--text);background:rgba(128,128,128,.09)}
+
+  .action-btn{height:28px;padding:0 10px;font:inherit;font-size:12px;font-weight:600;
+    border-radius:8px;cursor:pointer;border:none;}
+  .action-btn.save{background:var(--text);color:var(--card);}
+  .action-btn.cancel{background:transparent;color:var(--muted);}
+  .action-btn.cancel:hover{color:var(--text)}
+
+  /* Форма добавления вынесена вверх */
+  .day-form{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
   .day-form select,.day-form input{margin-top:0;height:42px}
   .day-form select{flex:1;min-width:0}
   .day-form input{width:96px;flex:none}
@@ -111,29 +123,55 @@
     border:none;border-radius:11px;cursor:pointer;transition:opacity .15s;}
   .day-form .add:hover{opacity:.86}
   .day-form .add:active{opacity:.72}
-  .day-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
-    gap:8px 12px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);}
+
+  .expenses{list-style:none;margin:0 0 12px;padding:0}
+  .expenses:empty{display:none}
+  .expense{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:14px;
+    border-bottom:1px solid var(--line);}
+  .expense:last-child{border-bottom:none}
+  .expense .cat{flex:1;min-width:0;color:var(--muted);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;}
+  .expense .amt{font-weight:550;font-variant-numeric:tabular-nums}
+  
+  /* Итоговая строка без верхней разделительной линии */
+  .total-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 4px; padding-top: 8px;
+    font-weight: 650; border-bottom: none !important;
+  }
+  .total-row .cat { flex: 1; color: var(--text); font-weight: 650; }
+  .total-row .amt { color: var(--text); font-weight: 650; font-size: 15px; }
+
+  .del{border:none;background:none;cursor:pointer;color:var(--muted);font-size:17px;
+    line-height:1;padding:2px 5px;border-radius:7px;opacity:.45;
+    transition:opacity .15s,color .15s;}
+  .del:hover{opacity:1;color:var(--bad)}
+
+  /* Футер с остатком */
+  .day-foot{display:flex;justify-content:space-between;align-items:center;
+    gap:12px; margin-top:12px;padding-top:11px;border-top:1px solid var(--line);}
   .day-total{font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;
     letter-spacing:-.01em;}
   .day-total.ok{color:var(--ok)}
   .day-total.over{color:var(--bad)}
   .day-total.neutral{color:var(--muted);font-weight:500}
-  .day-actions{display:flex;flex-wrap:wrap;gap:8px}
 
-  /* Кнопка "Завершить день" и её финальные состояния */
-  .finish-btn{
-    flex:none;height:34px;padding:0 14px;
-    font:inherit;font-size:12.5px;font-weight:600;
-    color:var(--text);background:var(--input);
-    border:1px solid var(--line);border-radius:9px;
-    cursor:pointer;white-space:nowrap;
-    transition:opacity .15s;
+  /* Кнопка Завершить */
+  .finish-btn{flex:none;height:32px;padding:0 14px;font:inherit;font-size:12.5px;
+    font-weight:600;color:var(--card);background:var(--text);border:none;
+    border-radius:8px;cursor:pointer;white-space:nowrap;transition:opacity .15s;}
+  .finish-btn:hover{opacity:.86}
+
+  /* Статусы завершения */
+  .status-badge{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:6px;white-space:nowrap;}
+  .status-badge.ok{color:var(--ok);background:rgba(15,138,95,0.1);}
+  .status-badge.warn{color:var(--warn);background:rgba(161,98,7,0.1);}
+  .status-badge.bad{color:var(--bad);background:rgba(211,57,47,0.1);}
+  @media (prefers-color-scheme: dark){
+    .status-badge.ok{background:rgba(53,211,153,0.1);}
+    .status-badge.warn{background:rgba(251,191,36,0.1);}
+    .status-badge.bad{background:rgba(255,111,100,0.1);}
   }
-  .finish-btn:not(:disabled):hover{opacity:.75}
-  .finish-btn:disabled{cursor:default}
-  .finish-btn.saved{color:var(--ok);opacity:1}
-  .finish-btn.covered{color:var(--warn);opacity:1}
-  .finish-btn.deducted{color:var(--bad);opacity:1}
 
   .stats-summary{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;
     margin:0 0 14px;}
@@ -152,6 +190,25 @@
   .stat-bar{height:4px;margin-top:7px;border-radius:2px;background:var(--line);overflow:hidden}
   .stat-bar i{display:block;height:100%;border-radius:2px}
   .empty{text-align:center;color:var(--muted);font-size:13px;padding:26px 0 8px}
+  
+  /* Стили для модального окна пополнения копилки */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+    z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal-content {
+    background: var(--card); border-radius: var(--radius); padding: 24px;
+    width: 90%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transform: translateY(10px); transition: transform 0.2s ease;
+  }
+  .modal-overlay.open .modal-content { transform: none; }
+  .modal-content h3 { margin: 0 0 16px; font-size: 16px; font-weight: 650; }
+  .modal-content input { height: 48px; font-size: 18px; text-align: center; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .modal-actions button { flex: 1; height: 44px; margin-top: 0; }
+
   .auth-wrap{max-width:360px;margin:0 auto;padding:60px 20px 40px}
   .auth-card{background:var(--card);border:1px solid var(--line);
     border-radius:var(--radius);padding:22px;}
@@ -169,6 +226,7 @@
   .user-bar{display:flex;justify-content:space-between;align-items:center;
     gap:12px;margin-bottom:14px;font-size:12px;color:var(--muted);}
   .user-bar .email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  
   @media (max-width:520px){
     main{padding:26px 14px 80px}
     .row{grid-template-columns:1fr}
@@ -211,11 +269,13 @@
     <h1 style="font-size:22px">Дневной бюджет</h1>
     <p class="sub">Сколько можно тратить в день до зарплаты</p>
   </header>
+  
   <nav class="tabs" aria-label="Разделы">
     <button type="button" data-tab="main" class="active">Основная</button>
     <button type="button" data-tab="history">История</button>
     <button type="button" data-tab="stats">Статистика</button>
   </nav>
+
   <div class="tabpane" id="tab-main">
     <section class="card">
       <div class="row">
@@ -226,6 +286,8 @@
           <input id="salaryDate" type="date">
         </label>
       </div>
+      <button type="button" class="btn-outline" id="add-savings-btn">Докинуть в копилку</button>
+      
       <div class="stats">
         <div class="stat"><span class="k">Дней</span><span class="v" id="stDays">—</span></div>
         <div class="stat"><span class="k">В день</span><span class="v" id="stPerDay">—</span></div>
@@ -242,9 +304,11 @@
     </section>
     <div id="daysMain"></div>
   </div>
+
   <div class="tabpane" id="tab-history" hidden>
     <div id="daysHistory"></div>
   </div>
+
   <div class="tabpane" id="tab-stats" hidden>
     <section class="card">
       <h2>Период</h2>
@@ -260,6 +324,18 @@
     </section>
   </div>
 </main>
+
+<!-- Модальное окно для копилки -->
+<div class="modal-overlay" id="savings-modal">
+  <div class="modal-content">
+    <h3>Докинуть в копилку</h3>
+    <input type="number" id="modal-savings-input" step="any" min="0" inputmode="decimal" placeholder="Сумма">
+    <div class="modal-actions">
+      <button type="button" class="btn" style="background: var(--line); color: var(--text);" id="modal-cancel">Отмена</button>
+      <button type="button" class="btn" id="modal-save">Добавить</button>
+    </div>
+  </div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -374,6 +450,9 @@
   let isApplyingRemote = false;
   let saveTimer = null;
 
+  let editingDay = null;
+  let editBackup = null;
+
   function normalizeState(p) {
     if (!p || typeof p !== 'object') return emptyState();
 
@@ -467,14 +546,22 @@
     const list = state.days[key] || [];
     const total = sumOf(list);
 
+    const isEditing = (editingDay === key);
     const finished = state.finished[key];
     const savedAmount = state.saved[key];
     const coveredAmount = state.covered[key];
     const deductedAmount = state.deducted[key];
-    const isFinished = !!(finished || savedAmount != null || coveredAmount != null || deductedAmount != null);
-    const isFuture = key > todayISO();
 
-    // Для завершённых дней показываем тот лимит, который был на момент завершения
+    let finishStatus = null;
+    if (finished && finished.status) finishStatus = finished.status;
+    else if (savedAmount != null) finishStatus = 'saved';
+    else if (coveredAmount != null) finishStatus = 'covered';
+    else if (deductedAmount != null) finishStatus = 'deducted';
+
+    const isFinished = !!finishStatus;
+    const isFuture = key > todayISO();
+    
+    // Фиксация бюджета для завершённых дней
     const pdDisplay = (finished && Number.isFinite(finished.pd)) ? finished.pd : pd;
 
     const el = document.createElement('div');
@@ -498,58 +585,70 @@
 
     headLeft.append(dateEl, budgetEl);
 
-    const delDay = document.createElement('button');
-    delDay.type = 'button';
-    delDay.className = 'day-del';
-    delDay.textContent = '×';
-    delDay.setAttribute('aria-label', 'Удалить карточку дня');
-    delDay.addEventListener('click', () => {
-      if (!confirm('Удалить карточку этого дня и все её расходы?')) return;
-      deleteDay(key);
-    });
+    const headRight = document.createElement('div');
+    headRight.className = 'day-head-right';
 
-    head.append(headLeft, delDay);
-    el.appendChild(head);
+    if (isEditing) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'action-btn cancel';
+      cancelBtn.textContent = 'Отмена';
+      cancelBtn.onclick = () => {
+        if (editBackup) state.days[key] = editBackup;
+        editingDay = null;
+        editBackup = null;
+        render();
+      };
 
-    /* список трат */
-    const ul = document.createElement('ul');
-    ul.className = 'expenses';
-    list.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'expense';
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'action-btn save';
+      saveBtn.textContent = 'Сохранить';
+      saveBtn.onclick = () => {
+        editingDay = null;
+        editBackup = null;
+        save();
+        render();
+      };
 
-      const cat = document.createElement('span');
-      cat.className = 'cat';
-      cat.textContent = item.category;
-
-      const amt = document.createElement('span');
-      amt.className = 'amt';
-      amt.textContent = money(item.amount);
-
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'del';
-      del.textContent = '×';
-      del.setAttribute('aria-label', 'Удалить');
+      headRight.append(cancelBtn, saveBtn);
+    } else {
+      // Карандаш только для завершённых дней
       if (isFinished) {
-        del.disabled = true;
-      } else {
-        del.addEventListener('click', () => {
-          state.days[key] = (state.days[key] || []).filter(x => x.id !== item.id);
-          save();
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'day-edit';
+        editBtn.innerHTML = '✎';
+        editBtn.setAttribute('aria-label', 'Редактировать');
+        editBtn.onclick = () => {
+          editingDay = key;
+          editBackup = JSON.parse(JSON.stringify(state.days[key] || []));
           render();
-        });
+        };
+        headRight.appendChild(editBtn);
       }
 
-      li.append(cat, amt, del);
-      ul.appendChild(li);
-    });
-    el.appendChild(ul);
+      const delDay = document.createElement('button');
+      delDay.type = 'button';
+      delDay.className = 'day-del';
+      delDay.textContent = '×';
+      delDay.setAttribute('aria-label', 'Удалить карточку дня');
+      delDay.onclick = () => {
+        if (!confirm('Удалить карточку этого дня и все её расходы?')) return;
+        deleteDay(key);
+      };
 
-    /* добавление траты */
+      headRight.append(delDay);
+    }
+    head.append(headLeft, headRight);
+    el.appendChild(head);
+
+    /* Форма добавления (вынесена наверх) */
     const form = document.createElement('form');
     form.className = 'day-form';
     form.autocomplete = 'off';
+    
+    if (!isEditing && (isFinished || isFuture)) form.style.display = 'none';
 
     const sel = document.createElement('select');
     CATS.forEach(c => {
@@ -574,16 +673,65 @@
     form.append(sel, inp, add);
     form.addEventListener('submit', e => {
       e.preventDefault();
-      if (isFinished) return;
+      if (!isEditing && (isFinished || isFuture)) return;
       const val = parseFloat(inp.value);
       if (!Number.isFinite(val) || val <= 0) { inp.focus(); return; }
       addExpense(key, val, sel.value);
     });
-
-    if (isFinished) form.style.display = 'none';
     el.appendChild(form);
 
-    /* итог + кнопка завершения */
+    /* Список трат */
+    const ul = document.createElement('ul');
+    ul.className = 'expenses';
+    list.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'expense';
+
+      const cat = document.createElement('span');
+      cat.className = 'cat';
+      cat.textContent = item.category;
+
+      const amt = document.createElement('span');
+      amt.className = 'amt';
+      amt.textContent = money(item.amount);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'del';
+      del.textContent = '×';
+      del.setAttribute('aria-label', 'Удалить');
+      
+      if (isEditing || (!isFinished && !isFuture)) {
+        del.onclick = () => {
+          state.days[key] = (state.days[key] || []).filter(x => x.id !== item.id);
+          save();
+          render();
+        };
+      } else {
+        del.style.display = 'none';
+      }
+
+      li.append(cat, amt, del);
+      ul.appendChild(li);
+    });
+
+    /* Итоговая строка */
+    const totalRow = document.createElement('li');
+    totalRow.className = 'expense total-row';
+
+    const tCat = document.createElement('span');
+    tCat.className = 'cat';
+    tCat.textContent = 'Итого';
+
+    const tAmt = document.createElement('span');
+    tAmt.className = 'amt';
+    tAmt.textContent = money(total);
+
+    totalRow.append(tCat, tAmt);
+    ul.appendChild(totalRow);
+    el.appendChild(ul);
+
+    /* итог + остаток */
     const foot = document.createElement('div');
     foot.className = 'day-foot';
 
@@ -591,54 +739,46 @@
     tot.className = 'day-total';
     if (pdDisplay === null) {
       tot.classList.add('neutral');
-      tot.textContent = total > 0 ? `Потрачено ${money(total)}` : 'Нет трат';
+      tot.textContent = 'Бюджет не задан';
     } else {
       const diff = pdDisplay - total;
       if (diff >= 0) {
         tot.classList.add('ok');
-        tot.textContent = `${money(total)} (остаток ${money(diff)})`;
+        tot.textContent = `Остаток: ${money(diff)}`;
       } else {
         tot.classList.add('over');
-        tot.textContent = `${money(total)} (перерасход ${money(-diff)})`;
+        tot.textContent = `Перерасход: ${money(-diff)}`;
       }
     }
     foot.appendChild(tot);
 
-    const actions = document.createElement('div');
-    actions.className = 'day-actions';
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'finish-btn';
-
-    let finishStatus = null;
-    if (finished && finished.status) finishStatus = finished.status;
-    else if (savedAmount != null) finishStatus = 'saved';
-    else if (coveredAmount != null) finishStatus = 'covered';
-    else if (deductedAmount != null) finishStatus = 'deducted';
-
-    if (finishStatus === 'saved') {
-      btn.textContent = 'Накоплено ✓';
-      btn.classList.add('saved');
-      btn.disabled = true;
-    } else if (finishStatus === 'covered') {
-      btn.textContent = 'Перерасход покрыт ✓';
-      btn.classList.add('covered');
-      btn.disabled = true;
-    } else if (finishStatus === 'deducted') {
-      btn.textContent = 'Доступная сумма пересчитана ✓';
-      btn.classList.add('deducted');
-      btn.disabled = true;
-    } else if (isFuture || pd === null) {
-      btn.textContent = 'Завершить день';
-      btn.disabled = true;
-    } else {
-      btn.textContent = 'Завершить день';
-      btn.addEventListener('click', () => finishDay(key));
+    // Кнопка завершения и статусы (в одной строке с остатком)
+    if (!isEditing) {
+      if (finishStatus === 'saved') {
+        const badge = document.createElement('span');
+        badge.className = 'status-badge ok';
+        badge.textContent = 'Накоплено ✓';
+        foot.appendChild(badge);
+      } else if (finishStatus === 'covered') {
+        const badge = document.createElement('span');
+        badge.className = 'status-badge warn';
+        badge.textContent = 'Перерасход покрыт ✓';
+        foot.appendChild(badge);
+      } else if (finishStatus === 'deducted') {
+        const badge = document.createElement('span');
+        badge.className = 'status-badge bad';
+        badge.textContent = 'Сумма пересчитана ✓';
+        foot.appendChild(badge);
+      } else if (!isFuture && pdDisplay !== null) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'finish-btn';
+        btn.textContent = 'Завершить день';
+        btn.onclick = () => finishDay(key);
+        foot.appendChild(btn);
+      }
     }
 
-    actions.appendChild(btn);
-    foot.appendChild(actions);
     el.appendChild(foot);
     return el;
   }
@@ -661,7 +801,6 @@
     let status, baseDelta, savingsDelta;
 
     if (overage <= 0) {
-      // Остаток → в копилку. Из «суммы на руках» уходит ровно дневной лимит.
       const remainder = -overage;
       state.savings = available + remainder;
       state.saved[key] = remainder;
@@ -669,14 +808,12 @@
       savingsDelta = remainder;
       status = 'saved';
     } else if (available >= overage) {
-      // Перерасход полностью покрыт копилкой.
       state.savings = available - overage;
       state.covered[key] = overage;
       baseDelta = pd;
       savingsDelta = -overage;
       status = 'covered';
     } else {
-      // Не хватает копилки — недостача списывается из «суммы на руках».
       const fromPocket = overage - available;
       state.savings = 0;
       state.deducted[key] = overage;
@@ -848,9 +985,13 @@
   }
 
   function deleteDay(key) {
+    if (editingDay === key) {
+      editingDay = null;
+      editBackup = null;
+    }
+
     const fin = state.finished[key];
     if (fin && state.calc) {
-      // Откат расчёта
       state.calc.baseAmount = Math.max(0, state.calc.baseAmount + (fin.baseDelta || 0));
       state.calc.days = Math.max(1, (state.calc.days || 0) + (fin.daysDelta || 1));
       state.calc.perDay = state.calc.baseAmount / state.calc.days;
@@ -858,7 +999,6 @@
       state.amount = String(Math.round(state.calc.baseAmount * 100) / 100);
       if (amountInput) amountInput.value = state.amount;
     } else {
-      // Старые записи без state.finished — откатываем только копилку
       if (state.saved[key] != null) {
         state.savings = Math.max(0, (state.savings || 0) - state.saved[key]);
       }
@@ -944,6 +1084,41 @@
 
   document.querySelectorAll('.tabs button').forEach(b => {
     b.addEventListener('click', () => setTab(b.dataset.tab));
+  });
+
+  /* ---------- логика модального окна копилки ---------- */
+  const savingsModal = $('#savings-modal');
+  const modalInput = $('#modal-savings-input');
+  const addSavingsBtn = $('#add-savings-btn');
+
+  addSavingsBtn.addEventListener('click', () => {
+    modalInput.value = '';
+    savingsModal.classList.add('open');
+    setTimeout(() => modalInput.focus(), 50);
+  });
+
+  $('#modal-cancel').addEventListener('click', () => {
+    savingsModal.classList.remove('open');
+  });
+
+  savingsModal.addEventListener('click', (e) => {
+    if (e.target === savingsModal) savingsModal.classList.remove('open');
+  });
+
+  $('#modal-save').addEventListener('click', () => {
+    const val = parseFloat(modalInput.value);
+    if (Number.isFinite(val) && val > 0) {
+      state.savings = (state.savings || 0) + val;
+      save();
+      render();
+      savingsModal.classList.remove('open');
+    } else {
+      modalInput.focus();
+    }
+  });
+
+  modalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('#modal-save').click();
   });
 
   /* ---------- авторизация ---------- */
